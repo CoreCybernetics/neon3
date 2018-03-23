@@ -13,17 +13,43 @@ http.listen(port, function () {
 app.use(express.static(__dirname));
 
 // Chatroom
-var numClient= 0;
+var numClients= 0;
 var numUsers = 0;
 
-//io.removeListener('connection',function(){});
+
+
+
+
+function countCharacter(str){
+  var i=0,l=str.length,c='',length=0;
+  for(;i<l;i++){
+    c=str.charCodeAt(i);
+    if(0x0000<=c&&c<=0x0019){
+      length += 0;
+    }else if(0x0020<=c&&c<=0x1FFF){
+      length += 1;
+    }else if(0x2000<=c&&c<=0xFF60){
+      length += 2;
+    }else if(0xFF61<=c&&c<=0xFF9F){
+      length += 1;
+    }else if(0xFFA0<=c){
+      length += 2;
+    }
+  }
+  return length;
+}
+
+function fillzero(obj, len) { obj= '          '+obj; return obj.substring(countCharacter(obj)-len); }
+
+
+
+
 io.on('connection', function (socket) {
 
   var addedUser = false;
 
-  numClient ++;
-  console.log(socket.id + ' Client Connected [ Total Clients : '+ numClient + ' ]');
-
+  numClients ++;
+  console.log('Client    connected : ' + fillzero((socket.username || "anomymous"),10)+'['+ socket.id +']' + '  [ Logged/Connected Clients : ' + numUsers +'/' + numClients + ' ]' );
 
 
   // when the client emits 'new message', this listens and executes
@@ -45,6 +71,8 @@ io.on('connection', function (socket) {
     socket.username = username;
     ++numUsers;
     addedUser = true;
+    console.log('Client       Logged : ' + fillzero(socket.username,10)+'['+ socket.id +']' + '  [ Logged/Connected Clients : ' + numUsers +'/' + numClients + ' ]' );
+
     socket.emit('login', {
       numUsers: numUsers
     });
@@ -71,8 +99,8 @@ io.on('connection', function (socket) {
 
   // when the user disconnects.. perform this
   socket.on('disconnect', function () {
-    numClient--;
-    console.log(socket.id +' Client Disconnected [ Total Clients : '+ numClient + ' ]');
+    numClients--;
+
     if (addedUser) {
       --numUsers;
       // echo globally that this client has left
@@ -81,5 +109,8 @@ io.on('connection', function (socket) {
         numUsers: numUsers
       });
     }
+
+    console.log('Client Disconnected : ' + fillzero((socket.username || "anomymous"),10)+'['+ socket.id +']' + '  [ Logged/Connected Clients : ' + numUsers +'/' + numClients + ' ]' );
+
   });
 });
